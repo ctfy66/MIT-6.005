@@ -5,11 +5,8 @@ package twitter;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 
 import org.junit.Test;
 
@@ -20,7 +17,27 @@ public class SocialNetworkTest {
      * See the ic03-testing exercise for examples of what a testing strategy comment looks like.
      * Make sure you have partitions.
      */
-    
+    /*
+        test guessFollowsGraph strategy:
+        amount of tweets : 0, 1, >1
+        amount of key in map : 0, 1, >1
+        amount of entry in set: 1, >1
+     */
+
+    /*
+        test influencer strategy:
+        amount of keys : 0, 1, >1
+        special case:
+        some counts are equal
+     */
+    private static final Instant d1 = Instant.parse("2016-02-17T10:00:00Z");
+    private static final Instant d2 = Instant.parse("2016-02-17T11:00:00Z");
+
+    private static final Tweet tweet1 = new Tweet(1, "alyssa", "is it reasonable to Talk about rivest so much @bbitdiddle ?", d1);
+    private static final Tweet tweet2 = new Tweet(2, "bbitdiddle", "rivest talk in 30 minutes #hype", d2);
+    private static final Tweet tweet3 = new Tweet(3, "hui", "rivest talk @alyssa @bbitdiddle in 30 minutes #hype @alyssa", d2);
+    private static final Tweet tweet4 = new Tweet(4, "alyssa", "is it reasonable to Talk about rivest so much @bbitdiddle ?", d1);
+
     @Test(expected=AssertionError.class)
     public void testAssertionsEnabled() {
         assert false; // make sure assertions are enabled with VM argument: -ea
@@ -32,6 +49,50 @@ public class SocialNetworkTest {
         
         assertTrue("expected empty graph", followsGraph.isEmpty());
     }
+
+    @Test
+    public void testGuessFollowGraphSingleTweetSingleKeyEmptySet() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(tweet2)));
+        assertTrue("expected empty graph or set is empty", (followsGraph.isEmpty() || followsGraph.get(tweet2.getAuthor().toLowerCase()).isEmpty()));
+    }
+    @Test
+    public void testGuessFollowGraphSingleTweetSingleKeyOneEntrySet() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(tweet1)));
+        assertTrue("expected right key-value pair", followsGraph.get(tweet1.getAuthor().toLowerCase()).contains("bbitdiddle") && followsGraph.get(tweet1.getAuthor().toLowerCase()).size() == 1);
+    }
+    @Test
+    public void testGuessFollowGraphSingleTweetSingleKeyMultipleEntrySet() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(tweet3)));
+        assertTrue("expected right key-value pair", followsGraph.get(tweet3.getAuthor().toLowerCase()).containsAll(Arrays.asList("bbitdiddle", "alyssa")) && followsGraph.get(tweet3.getAuthor().toLowerCase()).size() == 2);
+    }
+
+    @Test
+    public void testGuessFollowGraphMultipleTweetsSingleKeyOneEntrySet() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(tweet1, tweet4)));
+        assertTrue("expected right key-value pair", followsGraph.get(tweet1.getAuthor().toLowerCase()).contains("bbitdiddle") && followsGraph.get(tweet1.getAuthor().toLowerCase()).size() == 1);
+    }
+
+    @Test
+    public void testGuessFollowGraphMultipleTweetsSingleKeyMultipleEntrySet() {
+        final Tweet t1 = new Tweet(1, "alyssa", "is it reasonable to Talk about rivest so much @bbitdiddle ?", d1);
+        final Tweet t2 = new Tweet(1, "alyssa", "is it reasonable to Talk about rivest so much @bit ?", d1);
+
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(t1, t2)));
+        assertTrue("expected right key-value pair", followsGraph.get("alyssa").containsAll(Arrays.asList("bbitdiddle", "bit")) && followsGraph.get("alyssa").size() == 2);
+    }
+    @Test
+    public void testGuessFollowGraphMultipleTweetsMultipleKeyMultipleEntrySet() {
+        final Tweet t1 = new Tweet(1, "alyssa", "is it reasonable to Talk about rivest so much @bit @bbitdiddle ?", d1);
+        final Tweet t2 = new Tweet(1, "bit", "is it reasonable to Talk about rivest so much @alyssa ?", d1);
+
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(new ArrayList<>(Arrays.asList(t1, t2)));
+        assertTrue("expected right key-value pair", followsGraph.get("alyssa").containsAll(Arrays.asList("bit", "bbitdiddle")) && followsGraph.get("alyssa").size() == 2);
+        assertTrue("expected right key-value pair", followsGraph.get("bit").containsAll(Arrays.asList("alyssa")) && followsGraph.get("bit").size() == 1);
+
+    }
+
+
+
     
     @Test
     public void testInfluencersEmpty() {
@@ -39,6 +100,26 @@ public class SocialNetworkTest {
         List<String> influencers = SocialNetwork.influencers(followsGraph);
         
         assertTrue("expected empty list", influencers.isEmpty());
+    }
+
+    @Test
+    public void testInfluencerSingle() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(Arrays.asList(tweet1));
+        List<String> influencers = SocialNetwork.influencers(followsGraph);
+        assertEquals("expected two people", 2, influencers.size());
+        assertEquals("expected right order", "bbitdiddle", influencers.get(0));
+        assertEquals("expected right order", "alyssa", influencers.get(1));
+    }
+
+    @Test
+    public void testInfluencerMultiple() {
+        Map<String, Set<String>> followsGraph = SocialNetwork.guessFollowsGraph(Arrays.asList(tweet1, tweet3));
+        List<String> influencers = SocialNetwork.influencers(followsGraph);
+        assertEquals("expected three people", 3, influencers.size());
+        assertEquals("expected right order", "bbitdiddle", influencers.get(0));
+        assertEquals("expected right order", "alyssa", influencers.get(1));
+        assertEquals("expected right order", "hui", influencers.get(2));
+
     }
 
     /*

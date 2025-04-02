@@ -3,9 +3,7 @@
  */
 package twitter;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * SocialNetwork provides methods that operate on a social network.
@@ -27,34 +25,68 @@ public class SocialNetwork {
 
     /**
      * Guess who might follow whom, from evidence found in tweets.
-     * 
-     * @param tweets
-     *            a list of tweets providing the evidence, not modified by this
-     *            method.
+     *
+     * @param tweets a list of tweets providing the evidence, not modified by this
+     *               method.
      * @return a social network (as defined above) in which Ernie follows Bert
-     *         if and only if there is evidence for it in the given list of
-     *         tweets.
-     *         One kind of evidence that Ernie follows Bert is if Ernie
-     *         @-mentions Bert in a tweet. This must be implemented. Other kinds
-     *         of evidence may be used at the implementor's discretion.
-     *         All the Twitter usernames in the returned social network must be
-     *         either authors or @-mentions in the list of tweets.
+     * if and only if there is evidence for it in the given list of
+     * tweets.
+     * One kind of evidence that Ernie follows Bert is if Ernie
+     * @-mentions Bert in a tweet. This must be implemented. Other kinds
+     * of evidence may be used at the implementor's discretion.
+     * All the Twitter usernames in the returned social network must be
+     * either authors or @-mentions in the list of tweets.
      */
     public static Map<String, Set<String>> guessFollowsGraph(List<Tweet> tweets) {
-        throw new RuntimeException("not implemented");
+        Map<String, Set<String>> result = new HashMap<>();
+        for (Tweet tweet : tweets) {
+            String author = tweet.getAuthor().toLowerCase();
+            if (result.containsKey(author)) {
+                continue;
+            }
+            List<Tweet> tweetsWrittenByAuthor = Filter.writtenBy(tweets, author);
+            result.put(author, Extract.getMentionedUsers(tweetsWrittenByAuthor));
+        }
+        return result;
     }
 
     /**
      * Find the people in a social network who have the greatest influence, in
      * the sense that they have the most followers.
-     * 
-     * @param followsGraph
-     *            a social network (as defined above)
+     *
+     * @param followsGraph a social network (as defined above)
      * @return a list of all distinct Twitter usernames in followsGraph, in
-     *         descending order of follower count.
+     * descending order of follower count.
      */
     public static List<String> influencers(Map<String, Set<String>> followsGraph) {
-        throw new RuntimeException("not implemented");
-    }
+        Map<String, Integer> counts = new HashMap<>();
+        for (Map.Entry<String, Set<String>> entry : followsGraph.entrySet()) {
+            if (!counts.containsKey(entry.getKey())) {
+                counts.put(entry.getKey(), 0);
+            }
+            for (String followedUsr : entry.getValue()) {
+                counts.put(followedUsr, counts.getOrDefault(followedUsr, 0) + 1);
+            }
+        }
+        class followersCount {
 
+            public String username;
+            public int count;
+
+            followersCount(String username, int count) {
+                this.username = username;
+                this.count = count;
+            }
+        }
+        ArrayList<followersCount> followersCountsList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            followersCountsList.add(new followersCount(entry.getKey(), entry.getValue()));
+        }
+        followersCountsList.sort((fc1, fc2) -> fc2.count - fc1.count);
+        List<String> result = new LinkedList<>();
+        for (followersCount fc : followersCountsList) {
+            result.add(fc.username);
+        }
+        return result;
+    }
 }

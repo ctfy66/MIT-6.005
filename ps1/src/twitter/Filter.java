@@ -3,12 +3,13 @@
  */
 package twitter;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Filter consists of methods that filter a list of tweets for those matching a
  * condition.
- * 
  * DO NOT change the method signatures and specifications of these methods, but
  * you should implement their method bodies, and you may add new public or
  * private methods or classes if you like.
@@ -27,7 +28,27 @@ public class Filter {
      *         in the same order as in the input list.
      */
     public static List<Tweet> writtenBy(List<Tweet> tweets, String username) {
-        throw new RuntimeException("not implemented");
+        List<Tweet> res = new ArrayList<>();
+        for (Tweet tweet : tweets) {
+            if (usernameEquals(username, tweet.getAuthor())) {
+                res.add(tweet);
+            }
+        }
+        return res;
+    }
+
+    private static boolean usernameEquals(String a, String b) {
+        if (a.length() != b.length()) {
+            return false;
+        }
+        for (int i = 0; i < a.length(); i++) {
+            if (a.charAt(i) != b.charAt(i)) {
+                if (Character.toLowerCase(a.charAt(i)) != Character.toLowerCase(b.charAt(i))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -41,7 +62,13 @@ public class Filter {
      *         in the same order as in the input list.
      */
     public static List<Tweet> inTimespan(List<Tweet> tweets, Timespan timespan) {
-        throw new RuntimeException("not implemented");
+        List<Tweet> result = new LinkedList<>();
+        for (Tweet t : tweets) {
+            if (t.getTimestamp().isAfter(timespan.getStart()) && t.getTimestamp().isBefore(timespan.getEnd())) {
+                result.add(t);
+            }
+        }
+        return result;
     }
 
     /**
@@ -60,7 +87,40 @@ public class Filter {
      *         same order as in the input list.
      */
     public static List<Tweet> containing(List<Tweet> tweets, List<String> words) {
-        throw new RuntimeException("not implemented");
+        List<Tweet> result = new LinkedList<>();
+        if (words.isEmpty()) {
+            return result;
+        }
+        words.replaceAll(String::toLowerCase);
+
+        for (Tweet tweet : tweets) {
+            boolean isContain = false;
+            StringBuilder sb = new StringBuilder();
+            for (int i =  0; i < tweet.getText().length() && !isContain; i++) {
+                if (tweet.getText().charAt(i) == ' ') {
+                    String str = sb.toString();
+                    for (String word : words) {
+                        if (word.equals(str)) {
+                            result.add(tweet);
+                            isContain = true;
+                            break;
+                        }
+                    }
+                    sb.setLength(0);
+                } else {
+                    sb.append(Character.toLowerCase(tweet.getText().charAt(i)));
+                }
+            }
+            //last word
+            String str = sb.toString();
+            for (String word : words) {
+                if (word.equals(str)) {
+                    result.add(tweet);
+                }
+            }
+        }
+
+        return result;
     }
 
 }
